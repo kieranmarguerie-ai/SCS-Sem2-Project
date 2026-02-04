@@ -6,7 +6,7 @@ library(caret)
 
 #load in a literary corpus. Filedir should be the directory of the function words, which contains one folder for
 #each author. The 'featureset' argument denotes the type of features that should be used
-loadCorpus <- function(filedir,featureset="functionwords",maxauthors=Inf) {
+loadCorpus <- function(filedir,featureset="frequentwords",maxauthors=Inf) {
   authornames <- list.files(filedir)
   booknames <- list()
   features <- list()
