@@ -83,4 +83,33 @@ KNN_3 == y_test
 # 
 
 
+# Run PCA
+pca <- prcomp(X, scale. = TRUE)
+
+# Create dataframe with first few PCs
+pca_df <- data.frame(
+  PC1 = pca$x[,1],
+  PC2 = pca$x[,2],
+  PC3 = pca$x[,3],
+  PC4 = pca$x[,4],
+  Author = y
+)
+
+# PC1 vs PC2
+ggplot(pca_df, aes(PC1, PC2, colour = Author)) +
+  geom_point(alpha = 0.7) +
+  labs(title = "PCA Visualisation of Authors") +
+  theme_minimal()
+
+# PC1 vs PC3
+ggplot(pca_df, aes(PC1, PC3, colour = Author)) +
+  geom_point(alpha = 0.7) +
+  labs(title = "PCA Visualisation of Authors") +
+  theme_minimal()
+
+# PC2 vs PC3
+ggplot(pca_df, aes(PC2, PC3, colour = Author)) +
+  geom_point(alpha = 0.7) +
+  labs(title = "PCA Visualisation of Authors") +
+  theme_minimal()
 
