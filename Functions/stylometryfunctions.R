@@ -90,6 +90,193 @@ discriminantCorpus <- function(traindata, testdata) {
   return(preds)
 }
 
+discriminantCorpus_unbalanced <- function(traindata, testdata, true_labels) {
+  thetas <- NULL
+  preds <- NULL
+  priors <- NULL
+  
+  
+  #first learn the model for each aauthor
+  for (i in 1:length(traindata)) {
+    words <- apply(traindata[[i]],2,sum)
+    
+    #some words might never occur. This will be a problem since it will mean the theta for this word is 0, which means the likelihood will be 0 if this word occurs in the training set. So, we force each word to occur at leats once
+    inds <- which(words==0) 
+    if (length(inds) > 0) {words[inds] <- 1}
+    thetas <- rbind(thetas, words/sum(words))
+    
+    priors =  c(priors, nrow(traindata[[i]]))
+  }
+  
+  priors <- priors / sum(priors)
+  
+  #now classify
+  for (i in 1:nrow(testdata)) {
+    probs <- NULL
+    
+    for (j in 1:nrow(thetas)) {
+      probs <- c(probs, log(priors[j]) + dmultinom(testdata[i,],prob=thetas[j,],log=TRUE))
+    }
+    preds <- c(preds, which.max(probs))
+  }
+  
+  
+  # compute log score
+  log_score <- 0
+  for (i in 1:nrow(testdata)) {
+    log_score <- log_score +
+      dmultinom(testdata[i, ], prob = thetas[true_labels[i], ], log = TRUE)
+  }
+  
+  # compute brier score 
+  brier_score <- 0 
+  for (i in 1:nrow(testdata)){
+    brier_score <- brier_score + dmultinom(true_labels[i], prob = thetas[true_labels[i], ], log = FALSE)
+  }
+      
+  
+  return(c(preds, log_score))
+}
+
+
+discriminantCorpus_unbalanced2 <- function(traindata, testdata, true_label) {
+  
+  D <- length(traindata) # number of classes
+  V <- ncol(testdata)           # vocabulary size
+
+  thetas <- matrix(0, nrow = D, ncol = V)
+  priors <- numeric(D)
+  
+  # ---- Train model ----
+  for (k in 1:D) {
+    words <- colSums(traindata[[k]])
+    
+    # smoothing: force unseen words to appear once
+    words[words == 0] <- 1
+    
+    thetas[k, ] <- words / sum(words)
+    priors[k] <- nrow(traindata[[k]])
+  }
+  
+  priors <- priors / sum(priors)
+  
+  # ---- Classify test observation ----
+  # (you only ever pass 1 row, but this is general)
+  x <- testdata[1, ]
+  
+  # log-likelihoods
+  loglik <- numeric(D)
+  for (k in 1:D) {
+    loglik[k] <- dmultinom(x, prob = thetas[k, ], log = TRUE)
+  }
+  
+  # log-posterior (Bayes rule)
+  logpost <- loglik + log(priors)
+  
+  # ---- Prediction ----
+  pred <- which.max(logpost)
+  
+  # softmax for numerical stability
+  logpost <- logpost - max(logpost)
+  post <- exp(logpost)
+  post <- post / sum(post)
+  
+  # ---- Log score ----
+  log_score <- log(post[true_label])
+  
+  # ---- Brier score ----
+  y <- rep(0, D)
+  y[true_label] <- 1
+  brier_score <- sum((post - y)^2)
+  
+  return(list(
+    pred = pred,
+    post = post,
+    log_score = log_score,
+    brier_score = brier_score
+  ))
+}
+
+
+discriminantCorpus_bad <- function(traindata, testdata) {
+  thetas <- NULL
+  preds <- NULL
+  priors <- c(0.1, 0.9)
+  
+  
+  #first learn the model for each aauthor
+  for (i in 1:length(traindata)) {
+    words <- apply(traindata[[i]],2,sum)
+    
+    #some words might never occur. This will be a problem since it will mean the theta for this word is 0, which means the likelihood will be 0 if this word occurs in the training set. So, we force each word to occur at leats once
+    inds <- which(words==0) 
+    if (length(inds) > 0) {words[inds] <- 1}
+    thetas <- rbind(thetas, words/sum(words))
+    
+  }
+  
+  #now classify
+  for (i in 1:nrow(testdata)) {
+    probs <- NULL
+    for (j in 1:nrow(thetas)) {
+      probs <- c(probs, log(priors[j]) + dmultinom(testdata[i,],prob=thetas[j,],log=TRUE))
+    }
+    preds <- c(preds, which.max(probs))
+  }
+  return(preds)
+}
+
+ourdiscriminantCorpus <- function(traindata, testdata, labels = c("Gemini", "GPT", "Human", "Llama")) {
+  thetas <- NULL
+  preds <- NULL
+  
+  #first learn thea model for each aauthor
+  for (i in 1:length(traindata)) {
+    words <- apply(traindata[[i]],2,sum)
+    
+    #some words might never occur. This will be a problem since it will mean the theta for this word is 0, which means the likelihood will be 0 if this word occurs in the training set. So, we force each word to occur at leats once
+    inds <- which(words==0) 
+    if (length(inds) > 0) {words[inds] <- 1}
+    thetas <- rbind(thetas, words/sum(words))
+  }
+  
+  #now classify
+  for (i in 1:nrow(testdata)) {
+    probs <- NULL
+    for (j in 1:nrow(thetas)) {
+      probs <- c(probs, dmultinom(testdata[i,],prob=thetas[j,],log=TRUE))
+    }
+    preds <- c(preds, labels[which.max(probs)])
+  }
+  return(preds)
+}
+
+ourdiscriminantCorpus <- function(traindata, testdata, labels = c("Gemini", "GPT", "Human", "Llama")) {
+  thetas <- NULL
+  preds <- NULL
+  
+  #first learn thea model for each aauthor
+  for (i in 1:length(traindata)) {
+    words <- apply(traindata[[i]],2,sum)
+    
+    #some words might never occur. This will be a problem since it will mean the theta for this word is 0, which means the likelihood will be 0 if this word occurs in the training set. So, we force each word to occur at leats once
+    inds <- which(words==0) 
+    if (length(inds) > 0) {words[inds] <- 1}
+    thetas <- rbind(thetas, words/sum(words))
+  }
+  
+  #now classify
+  for (i in 1:nrow(testdata)) {
+    probs <- NULL
+    for (j in 1:nrow(thetas)) {
+      probs <- c(probs, dmultinom(testdata[i,],prob=thetas[j,],log=TRUE))
+    }
+    preds <- c(preds, labels[which.max(probs)])
+  }
+  return(preds)
+}
+
+
 
 KNNCorpus <- function(traindata, testdata) {
   train <- NULL
@@ -104,6 +291,22 @@ KNNCorpus <- function(traindata, testdata) {
     testdata[i,] <- testdata[i,]/sum(testdata[i,])
   }
   trainlabels <- 1:nrow(train)
+  myKNN(train, testdata, trainlabels,k=1)
+}
+
+ourKNNCorpus <- function(traindata, testdata) {
+  train <- NULL
+  for (i in 1:length(traindata)) {
+    train <- rbind(train, apply(traindata[[i]],2,sum))
+  }
+  
+  for (i in 1:nrow(train)) {
+    train[i,] <- train[i,]/sum(train[i,])
+  }
+  for (i in 1:nrow(testdata)) {
+    testdata[i,] <- testdata[i,]/sum(testdata[i,])
+  }
+  trainlabels <- names(traindata)
   myKNN(train, testdata, trainlabels,k=1)
 }
 
@@ -138,6 +341,32 @@ randomForestCorpus <- function(traindata, testdata) {
     preds[i] <- predict(rf,testdata[i,])
   }
   return(preds)
+}
+
+logScoreCorpus <- function(traindata, testdata, true_labels) {
+  thetas <- NULL
+  
+  # learn the multinomial parameters (same as discriminantCorpus)
+  for (i in 1:length(traindata)) {
+    words <- apply(traindata[[i]], 2, sum)
+    
+    inds <- which(words == 0)
+    if (length(inds) > 0) {
+      words[inds] <- 1
+    }
+    
+    thetas <- rbind(thetas, words / sum(words))
+  }
+  
+  # compute log score
+  log_score <- 0
+  for (i in 1:nrow(testdata)) {
+    j_true <- true_labels[i]
+    log_score <- log_score +
+      dmultinom(testdata[i, ], prob = thetas[j_true, ], log = TRUE)
+  }
+  
+  return(log_score)
 }
   
   
