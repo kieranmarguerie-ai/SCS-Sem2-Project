@@ -18,7 +18,7 @@ rosie_wd <- "~/University/Year 4/Statistical Case Studies/SCS-Sem2-Project/Data/
 ella_wd <- "C:/Users/Ella Park/Desktop/Year 4/Sem 1/Stats Case Study/A3/SCS-Sem2-Project/Data/FunctionWords/"
 kieran_wd <- "~/SCS-Sem2-Project/Data/FunctionWords/"
 
-words <- loadCorpus(rosie_wd) # only run if necessary - it takes forever!!!
+# words <- loadCorpus(rosie_wd) # only run if necessary - it takes forever!!!
 
 # Combined the data into one
 X <- rbind(
@@ -46,7 +46,8 @@ knn_cv_k <- function(X, y, k_values = 1:10, numfolds = 10, seed = 0) {
   
   N <- nrow(X)
   
-  folds <- sample(rep(1:numfolds, length.out = N))
+  # create stratified folds
+  folds <- createFolds(y, k = numfolds, returnTrain = FALSE)
   
   # initialise to store results
   results <- numeric(length(k_values))
@@ -62,8 +63,8 @@ knn_cv_k <- function(X, y, k_values = 1:10, numfolds = 10, seed = 0) {
     for (i in 1:numfolds) {
       
       # test and train indexes
-      test_idx <- which(folds == i)
-      train_idx <- which(folds != i)
+      test_idx  <- folds[[i]]
+      train_idx <- setdiff(1:N, test_idx)
       
       # extract train and test data and corresponding labels
       traindata <- X[train_idx, , drop = FALSE]
@@ -100,7 +101,8 @@ knn_cv_k.2 <- function(X, y, k_values = 1:10, numfolds = 10, seed = 1,
     X <- X / row_totals
   }
   
-  folds <- sample(rep(1:numfolds, length.out = N))
+  # create stratified folds
+  folds <- createFolds(y, k = numfolds, returnTrain = FALSE)
   
   # initialise to store results
   results <- numeric(length(k_values))
@@ -116,8 +118,8 @@ knn_cv_k.2 <- function(X, y, k_values = 1:10, numfolds = 10, seed = 1,
     for (i in 1:numfolds) {
       
       # test and train indexes
-      test_idx <- which(folds == i)
-      train_idx <- which(folds != i)
+      test_idx  <- folds[[i]]
+      train_idx <- setdiff(1:N, test_idx)
       
       # extract train and test data and corresponding labels
       traindata <- X[train_idx, , drop = FALSE]
@@ -151,7 +153,8 @@ knn_cv_k.3 <- function(X, y, k_values = 1:10, numfolds = 10, seed = 1,
     X <- X / row_totals
   }
   
-  folds <- sample(rep(1:numfolds, length.out = N))
+  # create stratified folds
+  folds <- createFolds(y, k = numfolds, returnTrain = FALSE)
   
   # initialise to store results
   results <- numeric(length(k_values))
@@ -167,8 +170,8 @@ knn_cv_k.3 <- function(X, y, k_values = 1:10, numfolds = 10, seed = 1,
     for (i in 1:numfolds) {
       
       # test and train indexes
-      test_idx <- which(folds == i)
-      train_idx <- which(folds != i)
+      test_idx  <- folds[[i]]
+      train_idx <- setdiff(1:N, test_idx)
       
       # extract train and test data and corresponding labels
       traindata <- X[train_idx, , drop = FALSE]
@@ -312,7 +315,9 @@ knn_cv_stats <- function(X, y, k, numfolds = 10, seed = 0,
   }
   
   N <- nrow(X)
-  folds <- sample(rep(1:numfolds, length.out = N))
+
+  # create stratified folds
+  folds <- createFolds(y, k = numfolds, returnTrain = FALSE)
   
   fold_acc <- numeric(numfolds)
   
@@ -320,8 +325,8 @@ knn_cv_stats <- function(X, y, k, numfolds = 10, seed = 0,
   for (i in 1:numfolds) {
     
     # train and test set index
-    test_idx  <- which(folds == i)
-    train_idx <- which(folds != i)
+    test_idx  <- folds[[i]]
+    train_idx <- setdiff(1:N, test_idx)
     
     # extract train and test data 
     traindata <- X[train_idx, , drop = FALSE]
