@@ -6,13 +6,19 @@ library(ggplot2)
 library(viridis)
 library(patchwork)
 
+# ~~~~~~~~~~~~~~~~~~~~ Source Useful Functions ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+source("Functions//stylometryfunctions.R")
+
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Load Data ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 rosie_wd <- "~/University/Year 4/Statistical Case Studies/SCS-Sem2-Project/Data/FunctionWords/"
 ella_wd <- "C:/Users/Ella Park/Desktop/Year 4/Sem 1/Stats Case Study/A3/SCS-Sem2-Project/Data/FunctionWords/"
 kieran_wd <- "~/SCS-Sem2-Project/Data/FunctionWords/"
 
-# words <- loadCorpus(rosie_wd) # only run if necessary - it takes forever!!!
+words <- loadCorpus(rosie_wd) # only run if necessary - it takes forever!!!
 
 # Combined the data into one
 X <- rbind(
@@ -30,11 +36,6 @@ y <- c(
   rep("Llama",   nrow(words$features[[4]]))
 )
 
-# ~~~~~~~~~~~~~~~~~~~~ Source Useful Functions ~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-source("Functions//stylometryfunctions.R")
-
 
 # ~~~~~~~~~~~ KNN (Documents) Cross Validation Functions ~~~~~~~~~~~~~~~~~
 
@@ -45,7 +46,6 @@ knn_cv_k <- function(X, y, k_values = 1:10, numfolds = 10, seed = 0) {
   
   N <- nrow(X)
   
-  # create stratified folds 
   folds <- sample(rep(1:numfolds, length.out = N))
   
   # initialise to store results
@@ -100,7 +100,6 @@ knn_cv_k.2 <- function(X, y, k_values = 1:10, numfolds = 10, seed = 1,
     X <- X / row_totals
   }
   
-  # create stratified folds 
   folds <- sample(rep(1:numfolds, length.out = N))
   
   # initialise to store results
@@ -152,7 +151,6 @@ knn_cv_k.3 <- function(X, y, k_values = 1:10, numfolds = 10, seed = 1,
     X <- X / row_totals
   }
   
-  # create stratified folds
   folds <- sample(rep(1:numfolds, length.out = N))
   
   # initialise to store results
@@ -298,3 +296,62 @@ best_acc_binary <- max(cv_acc)
 best_acc_multi <- max(cv_acc_multi)
 best_acc_grouped <- max(cv_acc_grouped)
 
+
+# ~~~~~~~~~~~~~~~~~~~~~~~ Standard Deviation ~~~~~~~~~~~~~~~~~~~~~~~
+
+knn_cv_stats <- function(X, y, k, numfolds = 10, seed = 0,
+                         relative_freq = TRUE) {
+  
+  set.seed(seed)
+  
+  # convert counts to relative frequencies
+  if (relative_freq) {
+    row_totals <- rowSums(X)
+    row_totals[row_totals == 0] <- 1
+    X <- X / row_totals
+  }
+  
+  N <- nrow(X)
+  folds <- sample(rep(1:numfolds, length.out = N))
+  
+  fold_acc <- numeric(numfolds)
+  
+  # loop over each fold
+  for (i in 1:numfolds) {
+    
+    # train and test set index
+    test_idx  <- which(folds == i)
+    train_idx <- which(folds != i)
+    
+    # extract train and test data 
+    traindata <- X[train_idx, , drop = FALSE]
+    testdata  <- X[test_idx, , drop = FALSE]
+    
+    #extract corresponding class labels
+    trainlabels <- y[train_idx]
+    testlabels  <- y[test_idx]
+    
+    # compute predictions applying myKNN
+    preds <- myKNN(traindata, testdata, trainlabels, k)
+    
+    # compute accuracy for that fold
+    fold_acc[i] <- mean(preds == testlabels)
+  }
+  
+  return(list(
+    k = k,
+    mean_accuracy = mean(fold_acc),
+    sd_accuracy = sd(fold_acc),
+    fold_accuracies = fold_acc
+  ))
+}
+
+
+binary_model <-  knn_cv_stats(X, y_binary, binary_k)
+multi_model <- knn_cv_stats(X, y, multi_k)
+
+binary_sd <- binary_model[[3]]
+multi_sd <- multi_model[[3]]
+
+binary_acc <- binary_model[[2]]
+multi_acc <- multi_model[[2]]
